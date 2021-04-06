@@ -138,7 +138,7 @@ def reportAFish(update, context):
 def receivePhoto(update, context):
     file = context.bot.getFile(update.message.photo[-1].file_id)
     print("file_id: " + str(file.file_id))
-    file.download('id-{}-{}.jpg'.format(update.effective_user.id, datetime.timestamp(datetime.now())))
+    file.download('{}-{}-{}.jpg'.format(update.effective_user.name,update.effective_user.id, datetime.timestamp(datetime.now())))
 
     context.bot.send_message(update.effective_chat.id,
                             text='That is one great looking fish. Could you provide some measurements?',

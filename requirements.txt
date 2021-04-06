@@ -1,2 +1,6 @@
 python-telegram-bot==12.4.2
 requests
+google-api-python-client
+apiclient
+google-auth-httplib2
+google-auth-oauthlib
