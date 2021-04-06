@@ -1,26 +1,22 @@
 import configparser
 import logging
-import sys
-from datetime import datetime
 import os
 import sys
-import time
-
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
-from googleapiclient.http import MediaFileUpload
-from httplib2 import Http
-from oauth2client.service_account import ServiceAccountCredentials
+from datetime import datetime
 
 import telegram
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaFileUpload
+from httplib2 import Http
 from oauth2client.service_account import ServiceAccountCredentials
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ParseMode
 from telegram.ext import MessageHandler, Filters, run_async
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, ConversationHandler
 
-from FishingService import saveLocationToExcel, saveUserDataToExcel, setSharingLocationUser, isUserSharingLocation, isLastShareLocationMoreThan15
-from model.User import User
+from FishingService import saveLocationToExcel, saveUserDataToExcel, setSharingLocationUser, isUserSharingLocation, \
+    isLastShareLocationMoreThan15
 from messages import *
+from model.User import User
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -205,7 +201,7 @@ def uploadFile(drive):
     for x in os.listdir(localDir):
         print("Uploading {}".format(localDir + '/' + x))
         file_metadata = {
-            'name': localDir + '/' + x,
+            'name': x,
             'parents': [folderId]}
         media = MediaFileUpload(x, mimetype='image/jpeg')
         file = drive.files().create(body=file_metadata,
