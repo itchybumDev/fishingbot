@@ -50,6 +50,7 @@ def shareFolder(drive, fileId):
         body=user_permission,
         fields='id',
     ))
+    print("Done Granting permission")
     batch.execute()
 
 
@@ -63,7 +64,6 @@ def createFolder(drive, folderName):
                                 fields='id').execute()
     print('Folder ID: %s' % file.get('id'))
     return file.get('id')
-
 
 def print_files_in_folder(drive, folder_id):
     """Print files belonging to a folder.
@@ -109,14 +109,6 @@ def main():
     drive = build('drive', 'v3', http=http_auth)
 
     getAllAvailableFolders(drive)
-
-    # print_files_in_folder(drive, folder_id)
-
-    request = drive.files().list(q="'{}' in parents".format(ROOT_FOLDER)).execute()
-    files = request.get('files', [])
-
-    for f in files:
-        print(f)
 
     for x in os.listdir('.'):
         if 'jpg' in x.lower() or 'jpeg' in x.lower() or 'png' in x.lower():
