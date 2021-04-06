@@ -202,11 +202,11 @@ def uploadFile(drive):
     script_path = os.path.dirname(os.path.realpath(__file__))
     localDir = os.path.join(script_path, "db")
     for x in os.listdir(localDir):
-        print("Uploading {}".format(os.path.join(script_path, x)))
+        print("Uploading {}".format(os.path.join(localDir, x)))
         file_metadata = {
             'name': x,
             'parents': [folderId]}
-        media = MediaFileUpload(os.path.join(script_path, x), mimetype='image/jpeg')
+        media = MediaFileUpload(os.path.join(localDir, x), mimetype='image/jpeg')
         file = drive.files().create(body=file_metadata,
                                     media_body=media,
                                     fields='id').execute()
