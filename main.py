@@ -36,6 +36,7 @@ START, JOIN, IHAVEAFISH, UPLOADPHOTO, GETDETAILS = range(5)
 def send_edit_text(query, text):
     query.edit_message_text(text, parse_mode=telegram.ParseMode.MARKDOWN)
 
+
 @run_async
 def start(update, context):
     currUser = User(update.effective_user.first_name,
@@ -59,6 +60,7 @@ def start(update, context):
     # Tell ConversationHandler that we're in state `FIRST` now
     return JOIN
 
+
 @run_async
 def getLocation(update, context):
     currUser = User(update.effective_user.first_name,
@@ -78,6 +80,7 @@ def getLocation(update, context):
     print(current_pos)
     setSharingLocationUser(currUser)
     saveLocationToExcel(currUser)
+
 
 @run_async
 def joined(update, context):
@@ -109,6 +112,7 @@ def joined(update, context):
                              parse_mode=telegram.ParseMode.MARKDOWN,
                              reply_markup=reply_markup)
     return IHAVEAFISH
+
 
 @run_async
 def reportAFish(update, context):
@@ -145,6 +149,7 @@ def reportAFish(update, context):
                             reply_markup=reply_markup)
     return UPLOADPHOTO
 
+
 @run_async
 def receivePhoto(update, context):
     file = context.bot.getFile(update.message.photo[-1].file_id)
@@ -156,6 +161,7 @@ def receivePhoto(update, context):
                             parse_mode=telegram.ParseMode.MARKDOWN)
 
     return GETDETAILS
+
 
 @run_async
 def receiveDetails(update, context):
@@ -175,12 +181,14 @@ def receiveDetails(update, context):
                              reply_markup=reply_markup)
     return IHAVEAFISH
 
+
 @run_async
 def quit(update, context):
     query = update.callback_query
     query.answer()
     query.edit_message_text(QuitMsg)
     return ConversationHandler.END\
+
 
 @run_async
 def uploadDb(update, context):
@@ -193,10 +201,11 @@ def uploadDb(update, context):
 
 def uploadFile(drive):
     folderId = "1hsl-O9SnyRCrOCKTSswoBjGu1K0XEB_a"
-    for x in os.listdir('./db'):
-        print("Uploading {}".format(x))
+    localDir = './db'
+    for x in os.listdir(localDir):
+        print("Uploading {}".format(localDir + '/' + x))
         file_metadata = {
-            'name': x,
+            'name': localDir + '/' + x,
             'parents': [folderId]}
         media = MediaFileUpload(x, mimetype='image/jpeg')
         file = drive.files().create(body=file_metadata,
