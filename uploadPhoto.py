@@ -118,8 +118,7 @@ def main():
     for f in files:
         print(f)
 
-    path = r"C:\Users\thien\PycharmProjects\FishingBot"
-    for x in os.listdir(path):
+    for x in os.listdir('.'):
         if 'jpg' in x.lower() or 'jpeg' in x.lower() or 'png' in x.lower():
             p_folderId = getParentFolderId(drive, x)
             uploadFile(drive, p_folderId, x)
