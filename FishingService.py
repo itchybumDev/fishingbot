@@ -27,7 +27,7 @@ def saveUserDataToExcel(user):
 
 def saveLocationToExcel(user):
     print("Writing location")
-    with open("./db/fishing-{}.csv".format(user.id), 'a+') as file:
+    with open("./db/{}-{}.csv".format(user.name, user.id), 'a+') as file:
         writer = csv.writer(file)
         writer.writerow([datetime.datetime.now(), user.id, user.lat, user.long])
     return True
