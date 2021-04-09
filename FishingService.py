@@ -3,6 +3,7 @@ import datetime
 
 sharingLocationUser = {}
 lastShareLocation = {}
+FISH_CATEGORIES = ['Groupers', 'Sweet Lips', 'Snappers', 'Bream', 'Pelagics', 'Sharks', 'Rays', 'Others']
 
 def setLastShareLocation(user):
     lastShareLocation[user.id] = datetime.datetime.now()

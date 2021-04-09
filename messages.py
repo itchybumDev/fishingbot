@@ -11,7 +11,11 @@ YourLiveLocationExpiredMsg = u"Your live location seems to expired.\n" \
 
 CongratulationsOnCaughtMsg = u"Congratulations on your catch. Please upload a photo of the fish"
 
-CouldYouProvideFishMeasurentsMsg = u"That is one great looking fish. Could you provide some measurements?\n" \
+ChooseFishCategories = u"That is one great looking fish! What kind of fish was that?"
+
+WhatFishIsIt = u"Oh, could you give me the fish name?"
+
+CouldYouProvideFishMeasurentsMsg = u"Awesome. Could you provide some measurements?\n" \
                                    u"Example: Fish size 20cm, caught near the river, ..."
 
 ThanksForSubmittingFishDetailsMsg = u"Thanks for the details. Lets get out there and fish more."

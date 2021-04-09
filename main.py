@@ -9,12 +9,12 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 from httplib2 import Http
 from oauth2client.service_account import ServiceAccountCredentials
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ParseMode
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ParseMode, ReplyKeyboardRemove
 from telegram.ext import MessageHandler, Filters, run_async
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, ConversationHandler
 
 from FishingService import saveLocationToExcel, saveUserDataToExcel, setSharingLocationUser, isUserSharingLocation, \
-    isLastShareLocationMoreThan15
+    isLastShareLocationMoreThan15, FISH_CATEGORIES
 from messages import *
 from model.User import User
 
@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 config = configparser.ConfigParser()
 config.read('config.ini')
 
-START, JOIN, IHAVEAFISH, UPLOADPHOTO, GETDETAILS = range(5)
+START, JOIN, IHAVEAFISH, UPLOADPHOTO, CHOOSECATEGORIES, RECEIVECATEGORIES, WHATFISHISIT, RECEIVEDETAILS = range(8)
 
 
 def send_edit_text(query, text):
@@ -152,16 +152,62 @@ def receivePhoto(update, context):
     print("file_id: " + str(file.file_id))
     file.download('{}-{}-{}.jpg'.format(update.effective_user.name,update.effective_user.id, datetime.timestamp(datetime.now())))
 
+    kb = []
+    for i in range(0,4):
+        index1 = i * 2
+        index2 = i * 2 + 1
+        kb.append([telegram.KeyboardButton(text=FISH_CATEGORIES[index1]),
+                   telegram.KeyboardButton(text=FISH_CATEGORIES[index2])])
+
+    kb_markup = telegram.ReplyKeyboardMarkup(kb)
     context.bot.send_message(update.effective_chat.id,
-                            text=CouldYouProvideFishMeasurentsMsg,
-                            parse_mode=telegram.ParseMode.MARKDOWN)
+                            text=ChooseFishCategories,
+                            parse_mode=telegram.ParseMode.MARKDOWN,
+                            reply_markup=kb_markup)
 
-    return GETDETAILS
+    return RECEIVECATEGORIES
 
+@run_async
+def receiveCategories(update, context):
+    # deleteMessage(update, context, 1)
+    fishCategory = update.message.text_markdown
+
+    if fishCategory == FISH_CATEGORIES[-1]:
+        context.bot.send_message(update.effective_chat.id,
+                                 text=WhatFishIsIt,
+                                 parse_mode=telegram.ParseMode.MARKDOWN,
+                                 reply_markup=ReplyKeyboardRemove())
+        return WHATFISHISIT
+
+    print("Got the category")
+    print(fishCategory)
+
+    context.bot.send_message(update.effective_chat.id,
+                             text=CouldYouProvideFishMeasurentsMsg,
+                             parse_mode=telegram.ParseMode.MARKDOWN,
+                             reply_markup=ReplyKeyboardRemove())
+    return RECEIVEDETAILS
+
+@run_async
+def whatFishIsIt(update, context):
+    # deleteMessage(update, context, 0)
+    fishDetails = update.message.text_markdown
+    print("Got the fish category")
+    print(fishDetails)
+
+    keyboard = [[InlineKeyboardButton(CaughtAFishMsg, callback_data=str('caught'))],
+                [InlineKeyboardButton('Quit', callback_data=str('quit'))]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    context.bot.send_message(update.effective_chat.id,
+                             text=ThanksForSubmittingFishDetailsMsg,
+                             parse_mode=telegram.ParseMode.MARKDOWN,
+                             reply_markup=reply_markup)
+    return RECEIVEDETAILS
 
 @run_async
 def receiveDetails(update, context):
-    deleteMessage(update, context, 2)
+    # deleteMessage(update, context, 2)
     fishDetails = update.message.text_markdown
 
     print("getting fish detail here")
@@ -183,7 +229,7 @@ def quit(update, context):
     query = update.callback_query
     query.answer()
     query.edit_message_text(QuitMsg)
-    return ConversationHandler.END\
+    return ConversationHandler.END
 
 
 @run_async
@@ -228,8 +274,13 @@ def main():
                          CallbackQueryHandler(quit, pattern='^quit$')],
             UPLOADPHOTO: [MessageHandler(Filters.photo, receivePhoto),
                           CallbackQueryHandler(quit, pattern='^quit$')],
-            GETDETAILS: [MessageHandler(Filters.text, receiveDetails),
+            RECEIVECATEGORIES: [MessageHandler(Filters.text, receiveCategories),
                          CallbackQueryHandler(quit, pattern='^quit$')],
+            WHATFISHISIT: [MessageHandler(Filters.text, whatFishIsIt),
+                         CallbackQueryHandler(quit, pattern='^quit$')],
+
+            RECEIVEDETAILS: [MessageHandler(Filters.text, receiveDetails),
+                             CallbackQueryHandler(quit, pattern='^quit$')],
         },
         fallbacks=[CommandHandler('start', start)]
     )
