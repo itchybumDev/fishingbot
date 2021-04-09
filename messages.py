@@ -18,7 +18,11 @@ WhatFishIsIt = u"Oh, could you give me the fish name?"
 CouldYouProvideFishMeasurentsMsg = u"Awesome. Could you provide some measurements?\n" \
                                    u"Example: Fish size 20cm, caught near the river, ..."
 
-ThanksForSubmittingFishDetailsMsg = u"Thanks for the details. Lets get out there and fish more."
+ThanksForSubmittingTheVideo = u"Thanks for the video. Lets get out there and fish more."
+
+CouldYouUploadAVideoToShowYouReleaseTheFish = u"Do you know what would be wonderful?\n" \
+                                              u"A video showing you release the fish?\n" \
+                                              u"No need to rush. I'll wait here."
 
 QuitMsg = u"Thanks for using fishing bot.\n" \
           u"Press /start again to join back"

@@ -26,7 +26,8 @@ logger = logging.getLogger(__name__)
 config = configparser.ConfigParser()
 config.read('config.ini')
 
-START, JOIN, IHAVEAFISH, UPLOADPHOTO, CHOOSECATEGORIES, RECEIVECATEGORIES, WHATFISHISIT, RECEIVEDETAILS = range(8)
+START, JOIN, IHAVEAFISH, UPLOADPHOTO, CHOOSECATEGORIES, \
+RECEIVECATEGORIES, WHATFISHISIT, RECEIVERELEASEVIDEO, RECEIVEDETAILS = range(9)
 
 
 def send_edit_text(query, text):
@@ -96,8 +97,8 @@ def joined(update, context):
         reply_markup = InlineKeyboardMarkup(keyboard)
         context.bot.send_message(update.effective_chat.id,
                                  text=NotSharedLocationPleaseShareMsg,
-                                parse_mode=telegram.ParseMode.MARKDOWN,
-                                reply_markup=reply_markup)
+                                 parse_mode=telegram.ParseMode.MARKDOWN,
+                                 reply_markup=reply_markup)
         return JOIN
 
     keyboard = [[InlineKeyboardButton(CaughtAFishMsg, callback_data=str('caught'))],
@@ -130,19 +131,19 @@ def reportAFish(update, context):
         reply_markup = InlineKeyboardMarkup(keyboard)
         # Send message with text and appended InlineKeyboard
         context.bot.send_message(update.effective_chat.id,
-            text=YourLiveLocationExpiredMsg,
-            parse_mode=ParseMode.MARKDOWN,
-            reply_markup=reply_markup
-        )
+                                 text=YourLiveLocationExpiredMsg,
+                                 parse_mode=ParseMode.MARKDOWN,
+                                 reply_markup=reply_markup
+                                 )
         # Tell ConversationHandler that we're in state `FIRST` now
         return JOIN
 
     keyboard = [[InlineKeyboardButton('Quit', callback_data=str('quit'))]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     context.bot.send_message(update.effective_chat.id,
-                            text=CongratulationsOnCaughtMsg,
-                            parse_mode=telegram.ParseMode.MARKDOWN,
-                            reply_markup=reply_markup)
+                             text=CongratulationsOnCaughtMsg,
+                             parse_mode=telegram.ParseMode.MARKDOWN,
+                             reply_markup=reply_markup)
     return UPLOADPHOTO
 
 
@@ -150,10 +151,13 @@ def reportAFish(update, context):
 def receivePhoto(update, context):
     file = context.bot.getFile(update.message.photo[-1].file_id)
     print("file_id: " + str(file.file_id))
-    file.download('{}-{}-{}.jpg'.format(update.effective_user.name,update.effective_user.id, datetime.timestamp(datetime.now())))
+    file_type = file.file_path.split('.')[-1]
+    file.download(
+        '{}-{}-{}.{}'.format(update.effective_user.name, update.effective_user.id,
+                             datetime.timestamp(datetime.now()), file_type))
 
     kb = []
-    for i in range(0,4):
+    for i in range(0, 4):
         index1 = i * 2
         index2 = i * 2 + 1
         kb.append([telegram.KeyboardButton(text=FISH_CATEGORIES[index1]),
@@ -161,11 +165,12 @@ def receivePhoto(update, context):
 
     kb_markup = telegram.ReplyKeyboardMarkup(kb)
     context.bot.send_message(update.effective_chat.id,
-                            text=ChooseFishCategories,
-                            parse_mode=telegram.ParseMode.MARKDOWN,
-                            reply_markup=kb_markup)
+                             text=ChooseFishCategories,
+                             parse_mode=telegram.ParseMode.MARKDOWN,
+                             reply_markup=kb_markup)
 
     return RECEIVECATEGORIES
+
 
 @run_async
 def receiveCategories(update, context):
@@ -188,6 +193,7 @@ def receiveCategories(update, context):
                              reply_markup=ReplyKeyboardRemove())
     return RECEIVEDETAILS
 
+
 @run_async
 def whatFishIsIt(update, context):
     # deleteMessage(update, context, 0)
@@ -195,14 +201,11 @@ def whatFishIsIt(update, context):
     print("Got the fish category")
     print(fishDetails)
 
-    keyboard = [[InlineKeyboardButton(CaughtAFishMsg, callback_data=str('caught'))],
-                [InlineKeyboardButton('Quit', callback_data=str('quit'))]]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
     context.bot.send_message(update.effective_chat.id,
-                             text=ThanksForSubmittingFishDetailsMsg,
+                             text=CouldYouProvideFishMeasurentsMsg,
                              parse_mode=telegram.ParseMode.MARKDOWN,
-                             reply_markup=reply_markup)
+                             reply_markup=ReplyKeyboardRemove())
+
     return RECEIVEDETAILS
 
 @run_async
@@ -213,12 +216,28 @@ def receiveDetails(update, context):
     print("getting fish detail here")
     print(fishDetails)
 
+    context.bot.send_message(update.effective_chat.id,
+                             text=CouldYouUploadAVideoToShowYouReleaseTheFish,
+                             parse_mode=telegram.ParseMode.MARKDOWN)
+    return RECEIVERELEASEVIDEO
+
+
+@run_async
+def receiveReleaseVideo(update, context):
+    # deleteMessage(update, context, 2)
+    file = context.bot.getFile(update.message.video.file_id)
+    # mime_type =
+    print("video_id: " + str(file.file_id))
+    file_type = file.file_path.split('.')[-1]
+    file.download(
+        '{}-{}-video-{}.{}'.format(update.effective_user.name, update.effective_user.id, datetime.timestamp(datetime.now()), file_type))
+
     keyboard = [[InlineKeyboardButton(CaughtAFishMsg, callback_data=str('caught'))],
                 [InlineKeyboardButton('Quit', callback_data=str('quit'))]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     context.bot.send_message(update.effective_chat.id,
-                             text=ThanksForSubmittingFishDetailsMsg,
+                             text=ThanksForSubmittingTheVideo,
                              parse_mode=telegram.ParseMode.MARKDOWN,
                              reply_markup=reply_markup)
     return IHAVEAFISH
@@ -241,6 +260,7 @@ def uploadDb(update, context):
     drive = build('drive', 'v3', http=http_auth)
     uploadFile(drive)
 
+
 def uploadFile(drive):
     folderId = "1hsl-O9SnyRCrOCKTSswoBjGu1K0XEB_a"
     localDir = './db'
@@ -259,7 +279,6 @@ def uploadFile(drive):
         print('Uploaded DB File ID: %s' % file.get('id'))
 
 
-
 def main():
     # ad.startAdmin()
     updater = Updater(config['telegram']['token_dev'], use_context=True)
@@ -275,12 +294,13 @@ def main():
             UPLOADPHOTO: [MessageHandler(Filters.photo, receivePhoto),
                           CallbackQueryHandler(quit, pattern='^quit$')],
             RECEIVECATEGORIES: [MessageHandler(Filters.text, receiveCategories),
-                         CallbackQueryHandler(quit, pattern='^quit$')],
+                                CallbackQueryHandler(quit, pattern='^quit$')],
             WHATFISHISIT: [MessageHandler(Filters.text, whatFishIsIt),
-                         CallbackQueryHandler(quit, pattern='^quit$')],
-
+                           CallbackQueryHandler(quit, pattern='^quit$')],
             RECEIVEDETAILS: [MessageHandler(Filters.text, receiveDetails),
                              CallbackQueryHandler(quit, pattern='^quit$')],
+            RECEIVERELEASEVIDEO: [MessageHandler(Filters.video, receiveReleaseVideo),
+                                  CallbackQueryHandler(quit, pattern='^quit$')],
         },
         fallbacks=[CommandHandler('start', start)]
     )
