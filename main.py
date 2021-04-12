@@ -14,8 +14,9 @@ from telegram.ext import MessageHandler, Filters, run_async
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, ConversationHandler
 
 from FishingService import saveLocationToExcel, saveUserDataToExcel, setSharingLocationUser, isUserSharingLocation, \
-    isLastShareLocationMoreThan15, FISH_CATEGORIES
+    isLastShareLocationMoreThan15, FISH_CATEGORIES, saveFishToExcel
 from messages import *
+from model.Fish import Fish
 from model.User import User
 
 logging.basicConfig(level=logging.INFO,
@@ -152,9 +153,10 @@ def receivePhoto(update, context):
     file = context.bot.getFile(update.message.photo[-1].file_id)
     print("file_id: " + str(file.file_id))
     file_type = file.file_path.split('.')[-1]
-    file.download(
-        '{}-{}-{}.{}'.format(update.effective_user.name, update.effective_user.id,
-                             datetime.timestamp(datetime.now()), file_type))
+    photoId = '{}-{}-{}.{}'.format(update.effective_user.name, update.effective_user.id,
+                             datetime.timestamp(datetime.now()), file_type)
+    file.download(photoId)
+    context.user_data['photoId'] = photoId
 
     kb = []
     for i in range(0, 4):
@@ -186,6 +188,7 @@ def receiveCategories(update, context):
 
     print("Got the category")
     print(fishCategory)
+    context.user_data['category'] = fishCategory
 
     context.bot.send_message(update.effective_chat.id,
                              text=CouldYouProvideFishMeasurentsMsg,
@@ -197,9 +200,11 @@ def receiveCategories(update, context):
 @run_async
 def whatFishIsIt(update, context):
     # deleteMessage(update, context, 0)
-    fishDetails = update.message.text_markdown
+    fishCategory = update.message.text_markdown
     print("Got the fish category")
-    print(fishDetails)
+    print(fishCategory)
+    context.user_data['category'] = fishCategory
+
 
     context.bot.send_message(update.effective_chat.id,
                              text=CouldYouProvideFishMeasurentsMsg,
@@ -215,6 +220,8 @@ def receiveDetails(update, context):
 
     print("getting fish detail here")
     print(fishDetails)
+    context.user_data['details'] = fishDetails
+
 
     context.bot.send_message(update.effective_chat.id,
                              text=CouldYouUploadAVideoToShowYouReleaseTheFish,
@@ -224,13 +231,22 @@ def receiveDetails(update, context):
 
 @run_async
 def receiveReleaseVideo(update, context):
+
+    currUser = User(update.effective_user.first_name,
+                    update.effective_user.full_name,
+                    update.effective_user.id,
+                    update.effective_user.is_bot,
+                    update.effective_user.last_name,
+                    update.effective_user.name)
     # deleteMessage(update, context, 2)
     file = context.bot.getFile(update.message.video.file_id)
     # mime_type =
     print("video_id: " + str(file.file_id))
     file_type = file.file_path.split('.')[-1]
-    file.download(
-        '{}-{}-video-{}.{}'.format(update.effective_user.name, update.effective_user.id, datetime.timestamp(datetime.now()), file_type))
+    videoId = '{}-{}-video-{}.{}'.format(update.effective_user.name, update.effective_user.id, datetime.timestamp(datetime.now()), file_type)
+    file.download(videoId)
+
+    context.user_data['videoId'] = videoId
 
     keyboard = [[InlineKeyboardButton(CaughtAFishMsg, callback_data=str('caught'))],
                 [InlineKeyboardButton('Quit', callback_data=str('quit'))]]
@@ -240,6 +256,10 @@ def receiveReleaseVideo(update, context):
                              text=ThanksForSubmittingTheVideo,
                              parse_mode=telegram.ParseMode.MARKDOWN,
                              reply_markup=reply_markup)
+
+    fish = Fish(context.user_data['photoId'], context.user_data['category'], context.user_data['details'], context.user_data['videoId'])
+    saveFishToExcel(currUser, fish)
+
     return IHAVEAFISH
 
 
@@ -254,12 +274,23 @@ def quit(update, context):
 @run_async
 def uploadDb(update, context):
     print("uploading db to google drive")
+    context.bot.send_message(update.effective_chat.id,
+                             text="uploading db to google drive",
+                             parse_mode=telegram.ParseMode.MARKDOWN)
+
     scopes = ['https://www.googleapis.com/auth/drive.file', 'https://www.googleapis.com/auth/drive.appdata']
     credentials = ServiceAccountCredentials.from_json_keyfile_name('credentials.json', scopes)
     http_auth = credentials.authorize(Http())
     drive = build('drive', 'v3', http=http_auth)
+    deleteFileOnDrive(drive)
     uploadFile(drive)
 
+def deleteFileOnDrive(drive):
+    folderId = "1hsl-O9SnyRCrOCKTSswoBjGu1K0XEB_a"
+    request = drive.files().list(q="'{}' in parents".format(folderId)).execute()
+    files = request.get('files', [])
+    for f in files:
+        drive.files().delete(fileId=f['id']).execute()
 
 def uploadFile(drive):
     folderId = "1hsl-O9SnyRCrOCKTSswoBjGu1K0XEB_a"
@@ -272,7 +303,7 @@ def uploadFile(drive):
         file_metadata = {
             'name': x,
             'parents': [folderId]}
-        media = MediaFileUpload(os.path.join(localDir, x), mimetype='image/jpeg')
+        media = MediaFileUpload(os.path.join(localDir, x), mimetype='text/csv')
         file = drive.files().create(body=file_metadata,
                                     media_body=media,
                                     fields='id').execute()
