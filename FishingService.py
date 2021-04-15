@@ -3,7 +3,7 @@ import datetime
 
 sharingLocationUser = {}
 lastShareLocation = {}
-FISH_CATEGORIES = ['Groupers', 'Sweet Lips', 'Snappers', 'Bream', 'Pelagics', 'Sharks', 'Rays', 'Others']
+FISH_CATEGORIES = ['Groupers/Kerapu', 'Snappers/Jenahak', 'Sharks/Ikan Yu', 'Rays/Ikan Pari', 'Others/Lain']
 
 
 def setLastShareLocation(user):

@@ -27,8 +27,8 @@ logger = logging.getLogger(__name__)
 config = configparser.ConfigParser()
 config.read('config.ini')
 
-START, JOIN, IHAVEAFISH, UPLOADPHOTO, CHOOSECATEGORIES, \
-RECEIVECATEGORIES, WHATFISHISIT, RECEIVERELEASEVIDEO, RECEIVEDETAILS = range(9)
+START, GETLOCATION, JOIN, IHAVEAFISH, UPLOADPHOTO, CHOOSECATEGORIES, \
+RECEIVECATEGORIES, WHATFISHISIT, RECEIVERELEASEVIDEO, RECEIVEDETAILS = range(10)
 
 
 def send_edit_text(query, text):
@@ -45,17 +45,45 @@ def start(update, context):
                     update.effective_user.name)
     saveUserDataToExcel(currUser)
 
+    # Send message with text and appended InlineKeyboard
+    update.message.reply_text(
+        text=StartMsg,
+        parse_mode=ParseMode.MARKDOWN
+    )
+    # Tell ConversationHandler that we're in state `FIRST` now
+    return GETLOCATION
+
+
+@run_async
+def getLocationAfterStart(update, context):
+    currUser = User(update.effective_user.first_name,
+                    update.effective_user.full_name,
+                    update.effective_user.id,
+                    update.effective_user.is_bot,
+                    update.effective_user.last_name,
+                    update.effective_user.name)
+    message = None
+    if update.edited_message:
+        message = update.edited_message
+    else:
+        message = update.message
+    print("getting position after start")
+    current_pos = (message.location.latitude, message.location.longitude)
+    currUser.setLocation(message.location.latitude, message.location.longitude)
+
+    setSharingLocationUser(currUser)
+    saveLocationToExcel(currUser)
+
     keyboard = []
     keyboard.append([InlineKeyboardButton("Next", callback_data=str('next'))])
 
     reply_markup = InlineKeyboardMarkup(keyboard)
     # Send message with text and appended InlineKeyboard
-    update.message.reply_text(
-        text=StartMsg,
-        parse_mode=ParseMode.MARKDOWN,
-        reply_markup=reply_markup
-    )
-    # Tell ConversationHandler that we're in state `FIRST` now
+    context.bot.send_message(update.effective_chat.id,
+                             text=GotLocationMsg,
+                             parse_mode=ParseMode.MARKDOWN,
+                             reply_markup=reply_markup
+                             )
     return JOIN
 
 
@@ -154,16 +182,13 @@ def receivePhoto(update, context):
     print("file_id: " + str(file.file_id))
     file_type = file.file_path.split('.')[-1]
     photoId = '{}-{}-{}.{}'.format(update.effective_user.name, update.effective_user.id,
-                             datetime.timestamp(datetime.now()), file_type)
+                                   datetime.timestamp(datetime.now()), file_type)
     file.download(photoId)
     context.user_data['photoId'] = photoId
 
     kb = []
-    for i in range(0, 4):
-        index1 = i * 2
-        index2 = i * 2 + 1
-        kb.append([telegram.KeyboardButton(text=FISH_CATEGORIES[index1]),
-                   telegram.KeyboardButton(text=FISH_CATEGORIES[index2])])
+    for f in FISH_CATEGORIES:
+        kb.append([telegram.KeyboardButton(text=f)])
 
     kb_markup = telegram.ReplyKeyboardMarkup(kb)
     context.bot.send_message(update.effective_chat.id,
@@ -205,13 +230,13 @@ def whatFishIsIt(update, context):
     print(fishCategory)
     context.user_data['category'] = fishCategory
 
-
     context.bot.send_message(update.effective_chat.id,
                              text=CouldYouProvideFishMeasurentsMsg,
                              parse_mode=telegram.ParseMode.MARKDOWN,
                              reply_markup=ReplyKeyboardRemove())
 
     return RECEIVEDETAILS
+
 
 @run_async
 def receiveDetails(update, context):
@@ -222,16 +247,23 @@ def receiveDetails(update, context):
     print(fishDetails)
     context.user_data['details'] = fishDetails
 
+    context.bot.send_message(update.effective_chat.id,
+                             text=YourEntryIsRecorded,
+                             parse_mode=telegram.ParseMode.MARKDOWN)
+
+    keyboard = [[InlineKeyboardButton("Yes", callback_data=str('yes'))],
+                [InlineKeyboardButton("No", callback_data=str('no'))]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
 
     context.bot.send_message(update.effective_chat.id,
-                             text=CouldYouUploadAVideoToShowYouReleaseTheFish,
-                             parse_mode=telegram.ParseMode.MARKDOWN)
+                             text=DidYouReleaseTheFishYouCaught,
+                             parse_mode=telegram.ParseMode.MARKDOWN,
+                             reply_markup=reply_markup)
     return RECEIVERELEASEVIDEO
 
 
 @run_async
 def receiveReleaseVideo(update, context):
-
     currUser = User(update.effective_user.first_name,
                     update.effective_user.full_name,
                     update.effective_user.id,
@@ -243,7 +275,8 @@ def receiveReleaseVideo(update, context):
     # mime_type =
     print("video_id: " + str(file.file_id))
     file_type = file.file_path.split('.')[-1]
-    videoId = '{}-{}-video-{}.{}'.format(update.effective_user.name, update.effective_user.id, datetime.timestamp(datetime.now()), file_type)
+    videoId = '{}-{}-video-{}.{}'.format(update.effective_user.name, update.effective_user.id,
+                                         datetime.timestamp(datetime.now()), file_type)
     file.download(videoId)
 
     context.user_data['videoId'] = videoId
@@ -257,9 +290,81 @@ def receiveReleaseVideo(update, context):
                              parse_mode=telegram.ParseMode.MARKDOWN,
                              reply_markup=reply_markup)
 
-    fish = Fish(context.user_data['photoId'], context.user_data['category'], context.user_data['details'], context.user_data['videoId'])
+    fish = Fish(context.user_data['photoId'], context.user_data['category'], context.user_data['details'],
+                context.user_data['videoId'])
     saveFishToExcel(currUser, fish)
 
+    return IHAVEAFISH
+
+
+@run_async
+def yesPath(update, context):
+    currUser = User(update.effective_user.first_name,
+                    update.effective_user.full_name,
+                    update.effective_user.id,
+                    update.effective_user.is_bot,
+                    update.effective_user.last_name,
+                    update.effective_user.name)
+
+    query = update.callback_query
+    query.answer()
+
+    send_edit_text(query,
+                   text=DidYouReleaseTheFishYouCaught)
+
+    context.bot.send_message(update.effective_chat.id,
+                             text=RememberToKeepVideoMsg,
+                             parse_mode=telegram.ParseMode.MARKDOWN)
+
+
+
+    keyboard = [[InlineKeyboardButton(CaughtAFishMsg, callback_data=str('caught'))],
+                [InlineKeyboardButton('Quit', callback_data=str('quit'))]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    context.bot.send_message(update.effective_chat.id,
+                             text=ThanksForSubmittingTheVideo,
+                             parse_mode=telegram.ParseMode.MARKDOWN,
+                             reply_markup=reply_markup)
+
+    fish = Fish(context.user_data['photoId'], context.user_data['category'], context.user_data['details'],
+                context.user_data['videoId'])
+    saveFishToExcel(currUser, fish)
+
+    return IHAVEAFISH
+
+
+@run_async
+def noPath(update, context):
+    currUser = User(update.effective_user.first_name,
+                    update.effective_user.full_name,
+                    update.effective_user.id,
+                    update.effective_user.is_bot,
+                    update.effective_user.last_name,
+                    update.effective_user.name)
+
+    query = update.callback_query
+    query.answer()
+
+    send_edit_text(query,
+                   text=DidYouReleaseTheFishYouCaught)
+
+    context.bot.send_message(update.effective_chat.id,
+                             text=ReminderNoPathMsg,
+                             parse_mode=telegram.ParseMode.MARKDOWN)
+
+    keyboard = [[InlineKeyboardButton(CaughtAFishMsg, callback_data=str('caught'))],
+                [InlineKeyboardButton('Quit', callback_data=str('quit'))]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    context.bot.send_message(update.effective_chat.id,
+                             text=YouMayBeginYourCatchMsg,
+                             parse_mode=telegram.ParseMode.MARKDOWN,
+                             reply_markup=reply_markup)
+
+    fish = Fish(context.user_data['photoId'], context.user_data['category'], context.user_data['details'],
+                context.user_data['videoId'])
+    saveFishToExcel(currUser, fish)
     return IHAVEAFISH
 
 
@@ -285,12 +390,14 @@ def uploadDb(update, context):
     deleteFileOnDrive(drive)
     uploadFile(drive)
 
+
 def deleteFileOnDrive(drive):
     folderId = "1hsl-O9SnyRCrOCKTSswoBjGu1K0XEB_a"
     request = drive.files().list(q="'{}' in parents".format(folderId)).execute()
     files = request.get('files', [])
     for f in files:
         drive.files().delete(fileId=f['id']).execute()
+
 
 def uploadFile(drive):
     folderId = "1hsl-O9SnyRCrOCKTSswoBjGu1K0XEB_a"
@@ -319,6 +426,7 @@ def main():
         entry_points=[CommandHandler('start', start, pass_args=True)],
         states={
             START: [MessageHandler(Filters.text, start)],
+            GETLOCATION: [MessageHandler(Filters.location, getLocationAfterStart)],
             JOIN: [CallbackQueryHandler(joined, pattern='^next$')],
             IHAVEAFISH: [CallbackQueryHandler(reportAFish, pattern='^caught$'),
                          CallbackQueryHandler(quit, pattern='^quit$')],
@@ -331,7 +439,8 @@ def main():
             RECEIVEDETAILS: [MessageHandler(Filters.text, receiveDetails),
                              CallbackQueryHandler(quit, pattern='^quit$')],
             RECEIVERELEASEVIDEO: [MessageHandler(Filters.video, receiveReleaseVideo),
-                                  CallbackQueryHandler(quit, pattern='^quit$')],
+                                  CallbackQueryHandler(yesPath, pattern='^yes$'),
+                                  CallbackQueryHandler(noPath, pattern='^no$')],
         },
         fallbacks=[CommandHandler('start', start)]
     )

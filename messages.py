@@ -1,4 +1,9 @@
-StartMsg = u"Please share live location then pressed next."
+StartMsg = u"Welcome to GoFishing 2021!\n" \
+           u"To join the competition\n" \
+           u"Tap the @ on the bottom right > Share Live Location > 8 hours "
+
+GotLocationMsg = u"Great, start fishing!\n" \
+                 u"Remember to take videos of your catch and release to qualify\n" \
 
 NotSharedLocationPleaseShareMsg = u"You have not share your location, please share location and click next"
 
@@ -9,20 +14,28 @@ YouMayBeginYourCatchMsg = u"Great, you may begin your catch & release journey"
 YourLiveLocationExpiredMsg = u"Your live location seems to expired.\n" \
                              u"Please share live location then pressed next."
 
-CongratulationsOnCaughtMsg = u"Congratulations on your catch. Please upload a photo of the fish"
+CongratulationsOnCaughtMsg = u"Congrats!\n" \
+                             u"Upload a photo of the fish against the ruler\n" \
+                             u"Tap on @ to upload photo"
 
-ChooseFishCategories = u"That is one great looking fish! What kind of fish was that?"
+ChooseFishCategories = u"Great! What fish is that?"
 
 WhatFishIsIt = u"Oh, could you give me the fish name?"
 
-CouldYouProvideFishMeasurentsMsg = u"Awesome. Could you provide some measurements?\n" \
-                                   u"Example: Fish size 20cm, caught near the river, ..."
+CouldYouProvideFishMeasurentsMsg = u"Awesome. Could you provide fish length in cm?\n" \
+                                   u"Example: Fish size 20cm ..."
 
 ThanksForSubmittingTheVideo = u"Thanks for the video. Lets get out there and fish more."
 
-CouldYouUploadAVideoToShowYouReleaseTheFish = u"Do you know what would be wonderful?\n" \
-                                              u"A video showing you release the fish?\n" \
-                                              u"No need to rush. I'll wait here."
+YourEntryIsRecorded = u"Thank you, your entry is recorded!"
 
-QuitMsg = u"Thanks for using fishing bot.\n" \
-          u"Press /start again to join back"
+DidYouReleaseTheFishYouCaught = u"Did you release the fish you caught?\n" \
+                                u"Take a video first"
+
+RememberToKeepVideoMsg = u"Remember to keep the video of the release"
+
+ReminderNoPathMsg = u"Reminder!\n" \
+                    u"To qualify, the fish has to be released."
+
+QuitMsg = u"We hope you enjoyed your fishing trip!\n" \
+          u"Updates will be posted in the channel"
