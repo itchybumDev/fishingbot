@@ -328,7 +328,7 @@ def yesPath(update, context):
                              reply_markup=reply_markup)
 
     fish = Fish(context.user_data['photoId'], context.user_data['category'], context.user_data['details'],
-                context.user_data['videoId'])
+                "")
     saveFishToExcel(currUser, fish)
 
     return IHAVEAFISH
@@ -363,7 +363,7 @@ def noPath(update, context):
                              reply_markup=reply_markup)
 
     fish = Fish(context.user_data['photoId'], context.user_data['category'], context.user_data['details'],
-                context.user_data['videoId'])
+                "")
     saveFishToExcel(currUser, fish)
     return IHAVEAFISH
 
