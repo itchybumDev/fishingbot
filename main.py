@@ -182,7 +182,7 @@ def receivePhoto(update, context):
     print("file_id: " + str(file.file_id))
     file_type = file.file_path.split('.')[-1]
     photoId = '{}-{}-{}.{}'.format(update.effective_user.name, update.effective_user.id,
-                                   datetime.timestamp(datetime.now()), file_type)
+                                   datetime.now().strftime("%Y-%m-%dT%H-%M-%S"), file_type)
     file.download(photoId)
     context.user_data['photoId'] = photoId
 
@@ -289,10 +289,10 @@ def receiveReleaseVideo(update, context):
                              text=ThanksForSubmittingTheVideo,
                              parse_mode=telegram.ParseMode.MARKDOWN,
                              reply_markup=reply_markup)
-
-    fish = Fish(context.user_data['photoId'], context.user_data['category'], context.user_data['details'],
-                context.user_data['videoId'])
-    saveFishToExcel(currUser, fish)
+    #
+    # fish = Fish(context.user_data['photoId'], context.user_data['category'], context.user_data['details'],
+    #             context.user_data['videoId'])
+    # saveFishToExcel(currUser, fish)
 
     return IHAVEAFISH
 
@@ -327,8 +327,9 @@ def yesPath(update, context):
                              parse_mode=telegram.ParseMode.MARKDOWN,
                              reply_markup=reply_markup)
 
-    fish = Fish(context.user_data['photoId'], context.user_data['category'], context.user_data['details'],
-                "")
+    fish = Fish(currUser.id, currUser.name,
+                context.user_data['photoId'], context.user_data['category'], context.user_data['details'],
+                "Released")
     saveFishToExcel(currUser, fish)
 
     return IHAVEAFISH
@@ -362,8 +363,9 @@ def noPath(update, context):
                              parse_mode=telegram.ParseMode.MARKDOWN,
                              reply_markup=reply_markup)
 
-    fish = Fish(context.user_data['photoId'], context.user_data['category'], context.user_data['details'],
-                "")
+    fish = Fish(currUser.id, currUser.name,
+                context.user_data['photoId'], context.user_data['category'], context.user_data['details'],
+                "Not Released")
     saveFishToExcel(currUser, fish)
     return IHAVEAFISH
 

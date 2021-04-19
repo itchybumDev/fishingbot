@@ -3,11 +3,14 @@ from datetime import datetime
 
 
 class Fish:
-    def __init__(self, photoId, category, description, videoId):
+    def __init__(self, userId, userName, photoId, category, description, released):
+        self.userId = userId
+        self.userName = userName
         self.photoId = photoId
         self.category = category
         self.description = description
-        self.videoId = videoId
+        self.released = released
+        self.createdTimestamp = datetime.now()
 
     def setPhotoId(self, photoId):
         self.photoId = photoId
@@ -22,4 +25,4 @@ class Fish:
         self.videoId = videoId
 
     def toExcelRow(self):
-        return [self.photoId, self.category, self.description, self.videoId]
+        return [self.userId, self.userName, self.photoId, self.category, self.description, self.released, self.createdTimestamp]

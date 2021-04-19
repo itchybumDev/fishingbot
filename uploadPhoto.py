@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import csv
 
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
@@ -93,7 +94,8 @@ def print_files_in_folder(drive, folder_id):
 
 def getParentFolderId(drive, x):
     folderName = "-".join(x.split('-')[:2])
-    print(folderName)
+    folderName = folderName.replace(".csv", '')
+    print("Saving to folder " + folderName)
     if folderName not in user_folder:
         folderId = createFolder(drive, folderName)
         user_folder[folderName] = folderId
@@ -113,12 +115,34 @@ def main():
     for x in os.listdir('.'):
         if 'jpg' in x.lower() or 'jpeg' in x.lower() or 'png' in x.lower():
             p_folderId = getParentFolderId(drive, x)
-            uploadFile(drive, p_folderId, x)
+            uploadPhotoFile(drive, p_folderId, x)
         else:
             print("Not uploading {}".format(x))
 
+    build_all_lat_long_file()
 
-def uploadFile(drive, p_folderId, x):
+    uploadFile(drive)
+
+
+def build_all_lat_long_file():
+    script_path = os.path.dirname(os.path.realpath(__file__))
+    localDir = os.path.join(script_path, "db")
+    for x in os.listdir(localDir):
+        if "allUser" in x or "fish" in x:
+            print("not lat long file " + x)
+        else:
+            data = None
+            with open(os.path.join(localDir, x), newline='') as f:
+                reader = csv.reader(f)
+                data = list(reader)
+            row_to_write = data[-1]
+            with open("./db/allUser-latlong.csv", 'a+') as file:
+                writer = csv.writer(file)
+                writer.writerow(row_to_write)
+
+
+
+def uploadPhotoFile(drive, p_folderId, x):
     if x in uploaded_files:
         print("{} is already uploaded".format(x))
         return
@@ -133,6 +157,46 @@ def uploadFile(drive, p_folderId, x):
                                 fields='id').execute()
     uploaded_files.append(x)
     print('File ID: %s' % file.get('id'))
+
+def deleteFileOnDriveUnderDb(drive):
+    folderId = "1hsl-O9SnyRCrOCKTSswoBjGu1K0XEB_a"
+    request = drive.files().list(q="'{}' in parents".format(folderId)).execute()
+    files = request.get('files', [])
+    for f in files:
+        drive.files().delete(fileId=f['id']).execute()
+
+
+def deleteSameFileUnderFolder(drive, folderId, fileName):
+    request = drive.files().list(q="'{}' in parents".format(folderId)).execute()
+    files = request.get('files', [])
+    for f in files:
+        if fileName in f['name']:
+            drive.files().delete(fileId=f['id']).execute()
+
+
+def uploadFile(drive):
+
+    script_path = os.path.dirname(os.path.realpath(__file__))
+    localDir = os.path.join(script_path, "db")
+    for x in os.listdir(localDir):
+        print("Uploading {}".format(os.path.join(localDir, x)))
+
+        if 'allUser' not in x:
+            folderId = getParentFolderId(drive, x)
+        else:
+            # "db" folder on google drive
+            folderId = "1hsl-O9SnyRCrOCKTSswoBjGu1K0XEB_a"
+
+        deleteSameFileUnderFolder(drive, folderId, x)
+
+        file_metadata = {
+            'name': x,
+            'parents': [folderId]}
+        media = MediaFileUpload(os.path.join(localDir, x), mimetype='text/csv')
+        file = drive.files().create(body=file_metadata,
+                                    media_body=media,
+                                    fields='id').execute()
+        print('Uploaded DB File ID: %s' % file.get('id'))
 
 
 if __name__ == '__main__':
